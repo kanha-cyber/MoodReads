@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Books | MoodReads</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Smooth Scroll */
+        html {
+          scroll-behavior: smooth;
+        }
+
+        /* Page Sections */
+        .section {
+          scroll-snap-align: start;
+          scroll-margin-top: 70px; /* If you have a sticky header */
+        }
+
+        /* Subtle Hover Ripple */
+        button, .btn {
+          transition: all 0.2s ease;
+        }
+        button:hover {
+          transform: scale(1.02);
+          box-shadow: 0 4px 14px rgba(255, 255, 255, 0.1);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease-out;
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        .mood-tag:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .book-card {
+            transition: all 0.3s ease;
+        }
+
+        .book-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .active-filter {
+            background-color: #8B5CF6;
+            color: white;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1E1E1E;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6B7280;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300 min-h-screen font-sans flex flex-col">
+    <!-- Page Loader -->
+    <div class="loader flex flex-col items-center justify-center">
+        <div class="text-4xl font-bold text-purple-500 mb-4 pulse">MoodReads</div>
+        <div class="text-gray-400">Finding your next perfect read...</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-gray-900 border-b border-gray-800 py-4 px-6 sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-purple-500 flex items-center">
+                <span>Mood</span><span class="text-gray-200">Reads</span>
+            </a>
+            <div class="hidden md:flex space-x-8">
+                <a href="index.html" class="hover:text-purple-400 transition duration-300">Home</a>
+                <a href="discover.html" class="text-purple-400 border-b-2 border-purple-500 pb-1">Discover</a>
+                <a href="favorites.html" class="hover:text-purple-400 transition duration-300">Favorites</a>
+                <a href="about.html" class="hover:text-purple-400 transition duration-300">About</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="darkModeToggle" class="p-2 rounded-full hover:bg-gray-800 transition duration-300">
+                    <i class="fas fa-moon text-gray-300"></i>
+                </button>
+                <div class="md:hidden">
+                    <button id="mobileMenuButton" class="p-2 rounded-full hover:bg-gray-800 transition duration-300">
+                        <i class="fas fa-bars text-gray-300"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden bg-gray-900 border-b border-gray-800 py-4 px-6 md:hidden">
+        <div class="flex flex-col space-y-4">
+            <a href="index.html" class="hover:text-purple-400 transition duration-300">Home</a>
+            <a href="discover.html" class="text-purple-400 border-b border-purple-500 pb-1">Discover</a>
+            <a href="favorites.html" class="hover:text-purple-400 transition duration-300">Favorites</a>
+            <a href="about.html" class="hover:text-purple-400 transition duration-300">About</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 flex flex-col md:flex-row flex-grow">
+        <!-- Sidebar with Filters -->
+        <div class="md:w-1/4 mb-8 md:mb-0 md:pr-6">
+            <div class="sticky top-24 bg-gray-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-2xl font-bold mb-6 text-purple-400">Mood Filters</h2>
+
+                <div class="space-y-2 mb-8">
+                    <div class="mood-tag active-filter cursor-pointer rounded-full py-2 px-4 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="all">
+                        All Moods
+                    </div>
+                    <div class="mood-tag cursor-pointer rounded-full py-2 px-4 bg-gray-700 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="romance">
+                        Romance
+                    </div>
+                    <div class="mood-tag cursor-pointer rounded-full py-2 px-4 bg-gray-700 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="horror">
+                        Horror
+                    </div>
+                    <div class="mood-tag cursor-pointer rounded-full py-2 px-4 bg-gray-700 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="mythology">
+                        Mythology
+                    </div>
+                    <div class="mood-tag cursor-pointer rounded-full py-2 px-4 bg-gray-700 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="dark-academia">
+                        Dark Academia
+                    </div>
+                    <div class="mood-tag cursor-pointer rounded-full py-2 px-4 bg-gray-700 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="mystery">
+                        Mystery
+                    </div>
+                    <div class="mood-tag cursor-pointer rounded-full py-2 px-4 bg-gray-700 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="sci-fi">
+                        Sci-Fi
+                    </div>
+                    <div class="mood-tag cursor-pointer rounded-full py-2 px-4 bg-gray-700 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="fantasy">
+                        Fantasy
+                    </div>
+                    <div class="mood-tag cursor-pointer rounded-full py-2 px-4 bg-gray-700 text-sm inline-block mr-2 mb-2 transition-all duration-300" data-mood="adventure">
+                        Adventure
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold mb-4 text-purple-400">Search</h3>
+                <div class="relative">
+                    <input type="text" placeholder="Search books..." class="w-full bg-gray-700 text-gray-200 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <button class="absolute right-3 top-2 text-gray-400">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area with Book Grid -->
+        <div class="md:w-3/4">
+            <div class="mb-8">
+                <h1 class="text-4xl font-bold mb-2 text-white">Discover Books</h1>
+                <p class="text-gray-400">Find your next read based on your mood and preferences</p>
+            </div>
+
+            <!-- Books Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="booksGrid">
+                <!-- Book cards will be dynamically generated here -->
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="flex justify-center my-8 hidden" id="loadingIndicator">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 py-12 mt-12">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-6 md:mb-0">
+                    <a href="index.html" class="text-2xl font-bold text-purple-500 flex items-center">
+                        <span>Mood</span><span class="text-gray-200">Reads</span>
+                    </a>
+                    <p class="text-gray-400 mt-2">Find books that match your mood.</p>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                    <div>
+                        <h3 class="text-white font-semibold mb-4">Navigate</h3>
+                        <ul class="space-y-2">
+                            <li><a href="index.html" class="text-gray-400 hover:text-purple-400 transition duration-300">Home</a></li>
+                            <li><a href="discover.html" class="text-gray-400 hover:text-purple-400 transition duration-300">Discover</a></li>
+                            <li><a href="favorites.html" class="text-gray-400 hover:text-purple-400 transition duration-300">Favorites</a></li>
+                            <li><a href="about.html" class="text-gray-400 hover:text-purple-400 transition duration-300">About</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold mb-4">Connect</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-gray-400 hover:text-purple-400 transition duration-300">Twitter</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-purple-400 transition duration-300">Instagram</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-purple-400 transition duration-300">Facebook</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-span-2 md:col-span-1">
+                        <h3 class="text-white font-semibold mb-4">Subscribe</h3>
+                        <p class="text-gray-400 mb-4">Get notifications about new books and features</p>
+                        <div class="flex">
+                            <input type="email" placeholder="Your email" class="bg-gray-700 text-white p-2 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-purple-500 flex-grow">
+                            <button class="bg-purple-600 text-white p-2 rounded-r-lg hover:bg-purple-700 transition duration-300">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm">© 2025 MoodReads. All rights reserved.</p>
+                <div class="flex space-x-4 mt-4 md:mt-0">
+                    <a href="#" class="text-gray-400 hover:text-purple-400 transition duration-300">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-purple-400 transition duration-300">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Page Loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.querySelector('.loader').style.opacity = '0';
+                setTimeout(() => {
+                    document.querySelector('.loader').style.display = 'none';
+                }, 800);
+            }, 800);
+        });
+
+        // Mobile Menu Toggle
+        document.getElementById('mobileMenuButton').addEventListener('click', () => {
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (mobileMenu.classList.contains('hidden')) {
+                mobileMenu.classList.remove('hidden');
+            } else {
+                mobileMenu.classList.add('hidden');
+            }
+        });
+
+        // Book data
+        const books = [
+            {
+                id: 1,
+                title: "The Silent Whispers",
+                author: "Eleanor Nightshade",
+                mood: "horror",
+                vibeMatch: 92,
+                cover: "https://i.pinimg.com/474x/6c/6e/5e/6c6e5e9bf9264211ecc47a6e1074bcc9.jpg",
+                description: "A haunting tale of a small town with dark secrets hidden beneath its quaint exterior."
+            },
+            {
+                id: 2,
+                title: "Eternal Embrace",
+                author: "Sophia Rosewood",
+                mood: "romance",
+                vibeMatch: 89,
+                cover: "https://i.pinimg.com/236x/24/9c/c4/249cc4deb76e9ec56712f7f1179bb315.jpg",
+                description: "Two souls find each other across centuries, bound by a love that transcends time."
+            },
+            {
+                id: 3,
+                title: "Olympian Shadows",
+                author: "Alexander Pierce",
+                mood: "mythology",
+                vibeMatch: 95,
+                cover: "https://i.pinimg.com/236x/a2/6a/27/a26a27a5ff6a2cb80d5b872a73d1413b.jpg",
+                description: "Ancient gods walk among us, their powers diminished but their conflicts eternal."
+            },
+            {
+                id: 4,
+                title: "Whispers in the Library",
+                author: "Victoria Blackwood",
+                mood: "dark-academia",
+                vibeMatch: 97,
+                cover: "https://i.pinimg.com/474x/05/cf/f9/05cff9f49fb82917b6e6cf2994d0e10e.jpg",
+                description: "A prestigious university harbors mysterious rituals and a secret society of scholars."
+            },
+            {
+                id: 5,
+                title: "The Quantum Gate",
+                author: "Dr. Julian Tesla",
+                mood: "sci-fi",
+                vibeMatch: 88,
+                cover: "https://i.pinimg.com/236x/57/b4/67/57b467565f7b8fc91341861d76f61b98.jpg",
+                description: "A physicist discovers a doorway to parallel universes, each with its own version of humanity."
+            },
+            {
+                id: 6,
+                title: "Crystal Kingdom",
+                author: "Aria Moonlight",
+                mood: "fantasy",
+                vibeMatch: 91,
+                cover: "https://i.pinimg.com/474x/74/b5/94/74b594c7dbb2e9131f7af078661bf146.jpg",
+                description: "A realm where gemstones hold magical powers and determine one's destiny."
+            },
+            {
+                id: 7,
+                title: "Murder at Midnight",
+                author: "Sebastian Gray",
+                mood: "mystery",
+                vibeMatch: 94,
+                cover: "https://i.pinimg.com/236x/db/8e/d5/db8ed5cf6f501a234a417cd4817d486b.jpg",
+                description: "A detective must solve a locked-room murder in a mansion full of suspects."
+            },
+            {
+                id: 8,
+                title: "The Lost Expedition",
+                author: "Hunter Wilderness",
+                mood: "adventure",
+                vibeMatch: 90,
+                cover: "https://i.pinimg.com/236x/da/88/29/da8829eb5332f46f6af78c7f4fc51e8d.jpg",
+                description: "A team of explorers ventures into uncharted territory seeking an ancient civilization."
+            },
+            {
+                id: 9,
+                title: "Cursed Academy",
+                author: "Eliza Darkmoon",
+                mood: "dark-academia",
+                vibeMatch: 96,
+                cover: "https://i.pinimg.com/474x/17/89/3c/17893c8dedf34d53a1980e8cf686f459.jpg",
+                description: "Students at an elite boarding school discover they are part of a centuries-old magical experiment."
+            },
+            {
+                id: 10,
+                title: "The Last Prophecy",
+                author: "Orion Stargazer",
+                mood: "fantasy",
+                vibeMatch: 93,
+                cover: "https://i.pinimg.com/236x/d4/1d/a0/d41da0ecd2b225c746300dbe93191818.jpg",
+                description: "A reluctant hero must fulfill an ancient prophecy to save a dying world."
+            },
+            {
+                id: 11,
+                title: "Haunted Hollows",
+                author: "Morgan Graves",
+                mood: "horror",
+                vibeMatch: 96,
+                cover: "https://i.pinimg.com/236x/da/1e/92/da1e92ed90ffffef2c53461d35e700a1.jpg",
+                description: "A family moves into a house where the walls remember past tragedies."
+            },
+            {
+                id: 12,
+                title: "Across the Stars",
+                author: "Nova Celestial",
+                mood: "sci-fi",
+                vibeMatch: 87,
+                cover: "https://i.pinimg.com/474x/08/54/52/0854527ad44a5731cbf3f7d24d9c400a.jpg",
+                description: "Humanity's first interstellar colony faces threats from both alien life and human nature."
+            }
+        ];
+
+        // Render Books
+        function renderBooks(filteredBooks = books) {
+            const booksGrid = document.getElementById('booksGrid');
+            booksGrid.innerHTML = '';
+
+            filteredBooks.forEach((book, index) => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transition-all duration-500 hover:shadow-2xl fade-in';
+                bookCard.style.animationDelay = `${index * 0.1}s`;
+
+                bookCard.innerHTML = `
+                    <img src="${book.cover}" alt="${book.title}" class="w-full h-64 object-cover">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                            <span class="inline-block px-3 py-1 text-sm rounded-full bg-purple-900 text-purple-200">${book.mood.replace('-', ' ')}</span>
+                            <span class="text-green-400 font-semibold">${book.vibeMatch}% match</span>
+                        </div>
+                        <h3 class="text-xl font-bold mt-3 text-white">${book.title}</h3>
+                        <p class="text-gray-400">by ${book.author}</p>
+                        <p class="mt-3 text-gray-300 line-clamp-3">${book.description}</p>
+                        <div class="mt-4 flex justify-between items-center">
+                            <a href="book.html?id=${book.id}" class="text-purple-400 hover:text-purple-300 transition duration-300">View Details</a>
+                            <button class="favorite-btn text-gray-400 hover:text-yellow-300 transition duration-300" data-id="${book.id}">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                booksGrid.appendChild(bookCard);
+            });
+
+            // Add event listeners to favorite buttons
+            document.querySelectorAll('.favorite-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const bookId = this.getAttribute('data-id');
+                    toggleFavorite(bookId);
+
+                    // Update UI
+                    if (this.innerHTML.includes('far')) {
+                        this.innerHTML = '<i class="fas fa-heart"></i>';
+                        this.classList.remove('text-gray-400');
+                        this.classList.add('text-yellow-300');
+                    } else {
+                        this.innerHTML = '<i class="far fa-heart"></i>';
+                        this.classList.remove('text-yellow-300');
+                        this.classList.add('text-gray-400');
+                    }
+                });
+            });
+
+            // Add Intersection Observer for animations
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = 1;
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.fade-in').forEach(card => {
+                observer.observe(card);
+            });
+        }
+
+        // Filter Books
+        function filterBooks(mood) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.classList.remove('hidden');
+
+            setTimeout(() => {
+                let filteredBooks;
+
+                if (mood === 'all') {
+                    filteredBooks = books;
+                } else {
+                    filteredBooks = books.filter(book => book.mood === mood);
+                }
+
+                renderBooks(filteredBooks);
+                loadingIndicator.classList.add('hidden');
+            }, 800); // Simulated loading delay
+        }
+
+        // Toggle Favorites
+        function toggleFavorite(bookId) {
+            let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+            if (favorites.includes(bookId)) {
+                favorites = favorites.filter(id => id != bookId);
+            } else {
+                favorites.push(bookId);
+            }
+
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+        }
+
+        // Set up event listeners for mood tags
+        document.querySelectorAll('.mood-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                const mood = this.getAttribute('data-mood');
+
+                // Update active filter UI
+                document.querySelectorAll('.mood-tag').forEach(t => {
+                    t.classList.remove('active-filter');
+                    t.classList.add('bg-gray-700');
+                });
+
+                this.classList.add('active-filter');
+                this.classList.remove('bg-gray-700');
+
+                filterBooks(mood);
+            });
+        });
+
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            document.querySelector('html').classList.toggle('dark');
+
+            const icon = this.querySelector('i');
+            if (icon.classList.contains('fa-moon')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+        });
+
+        // Initial render
+        renderBooks();
+
+        // Check for favorites and update UI
+        function updateFavoritesUI() {
+            const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+            document.querySelectorAll('.favorite-btn').forEach(btn => {
+                const bookId = btn.getAttribute('data-id');
+
+                if (favorites.includes(bookId)) {
+                    btn.innerHTML = '<i class="fas fa-heart"></i>';
+                    btn.classList.remove('text-gray-400');
+                    btn.classList.add('text-yellow-300');
+                }
+            });
+        }
+
+        // Call after render
+        setTimeout(updateFavoritesUI, 1000);
+    </script>
+</body>
+</html>
